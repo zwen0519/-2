@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿倫冰店 - QR點餐系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-2xl font-black">潮州燒冷冰（阿倫冰店）</h1>
+            <p class="text-blue-100 mt-1">內用桌號：<span id="display-table" class="font-bold text-yellow-300">未偵測</span></p>
+        </div>
+
+        <div class="p-6">
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 p-3 mb-6 text-sm text-yellow-800">
+                <p class="font-bold mb-1">🔥 燒冷冰吃法：</p>
+                <p>1. 不要攪拌 / 2. 從旁邊由下舀起來吃 / 3. 先吃湯圓</p>
+            </div>
+
+            <h2 class="text-lg font-bold mb-4 border-b-2 border-blue-100 pb-2">精選冰品/熱食</h2>
+            <div id="menu" class="space-y-4">
+                </div>
+        </div>
+
+        <div class="border-t bg-gray-50 p-6">
+            <h3 class="font-bold text-gray-700">已選清單</h3>
+            <div id="cart-list" class="mt-2 text-sm text-gray-500 min-h-[40px]">
+                尚未選擇任何冰品
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <span class="text-gray-600 font-bold">小計</span>
+                <span class="text-2xl font-black text-red-500">$<span id="total-price">0</span></span>
+            </div>
+            <button onclick="sendOrder()" class="w-full mt-4 bg-blue-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
+                確認送出訂單
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 根據照片建立菜單資料
+        const menuItems = [
+            { name: "綜合燒冷冰", price: 65, note: "招牌必點" },
+            { name: "綜合燒冷冰+煉乳", price: 70, note: "香甜濃厚" },
+            { name: "冷凍芋頭", price: 65, note: "" },
+            { name: "冷凍綠豆饌", price: 65, note: "" },
+            { name: "四果冰", price: 65, note: "" },
+            { name: "牛奶冰", price: 65, note: "" },
+            { name: "草莓冰", price: 65, note: "" },
+            { name: "烏梅冰", price: 65, note: "" },
+            { name: "巧克力冰", price: 65, note: "" },
+            { name: "綜合熱湯圓", price: 65, note: "冬季推薦" }
+        ];
+
+        let cart = [];
+
+        // 初始化菜單介面
+        const menuEl = document.getElementById('menu');
+        menuItems.forEach(item => {
+            menuEl.innerHTML += `
+                <div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                    <div>
+                        <p class="font-bold text-gray-800">${item.name}</p>
+                        <p class="text-blue-500 font-medium">$${item.price}</p>
+                    </div>
+                    <button onclick="addToCart('${item.name}', ${item.price})" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-600 hover:text-white transition-colors">
+                        加點
+                    </button>
+                </div>
+            `;
+        });
+
+        // 偵測桌號邏輯
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableId = urlParams.get('table') || "測試桌";
+        document.getElementById('display-table').innerText = tableId;
+
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            updateUI();
+        }
+
+        function updateUI() {
+            const cartListEl = document.getElementById('cart-list');
+            const totalEl = document.getElementById('total-price');
+            
+            if (cart.length === 0) {
+                cartListEl.innerText = "尚未選擇任何冰品";
+                totalEl.innerText = "0";
+                return;
+            }
+
+            cartListEl.innerHTML = cart.map((item, idx) => `
+                <div class="flex justify-between py-1">
+                    <span>${item.name}</span>
+                    <span class="font-medium">$${item.price}</span>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            totalEl.innerText = total;
+        }
+
+        function sendOrder() {
+            if (cart.length === 0) return alert("請先選擇冰品喔！");
+            
+            // 模擬送出訂單
+            const orderSummary = cart.map(i => i.name).join(', ');
+            alert(`【阿倫冰店】訂單已收到！\n桌號：${tableId}\n品項：${orderSummary}\n總計：$${document.getElementById('total-price').innerText}`);
+            
+            // 重設購物車
+            cart = [];
+            updateUI();
+        }
+    </script>
+</body>
+</html>

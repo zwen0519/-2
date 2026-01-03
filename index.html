@@ -35,23 +35,28 @@
     </div>
 
     <script>
-        function generateQR() {
-            const table = document.getElementById('table-input').value || "A1";
-            // 自動抓取你現在 VS Code 運行的網址
-            const currentUrl = window.location.origin + window.location.pathname;
-            // 修改 index.html 裡的這一行
-const fullUrl = `${baseUrl}menu.html?table=${table}`;
-            
-            // 使用公共 API 生成圖片
-            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullUrl)}`;
-            
-            document.getElementById('qr-display').src = qrImageUrl;
-            document.getElementById('url-text').innerText = fullUrl;
-        }
-
-        // 頁面一打開就先跑一次
-        window.onload = generateQR;
+       function generateQR() {
+    const table = document.getElementById('table-input').value || "A1";
+    
+    // 精準抓取 menu.html 的完整網址
+    const currentUrl = window.location.href.split('index.html')[0].split('?')[0];
+    const fullUrl = `${currentUrl}menu.html?table=${encodeURIComponent(table)}`;
+    
+    // 使用保證支援 HTTPS 的產生器 API
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullUrl)}`;
+    
+    const qrDisplay = document.getElementById('qr-display');
+    qrDisplay.src = qrImageUrl;
+    
+    // 確保圖片載入後才顯示
+    qrDisplay.onload = function() {
+        qrDisplay.style.display = 'block';
+    };
+    
+    document.getElementById('url-text').innerText = fullUrl;
+}
     </script>
 </body>
 </html>
+
 

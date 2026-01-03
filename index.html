@@ -39,7 +39,8 @@
             const table = document.getElementById('table-input').value || "A1";
             // 自動抓取你現在 VS Code 運行的網址
             const currentUrl = window.location.origin + window.location.pathname;
-            const fullUrl = `${currentUrl}?table=${table}`;
+            // 修改 index.html 裡的這一行
+const fullUrl = `${baseUrl}menu.html?table=${table}`;
             
             // 使用公共 API 生成圖片
             const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullUrl)}`;
@@ -53,3 +54,4 @@
     </script>
 </body>
 </html>
+

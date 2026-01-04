@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>阿倫冰店 ‧ 櫃檯收單系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7BKrE4Nq0ZPDPcOvj5iJ7nwh1eFtH8PE",
+            authDomain: "alun-ice-shop.firebaseapp.com",
+            databaseURL: "https://alun-ice-shop-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "alun-ice-shop",
+            storageBucket: "alun-ice-shop.firebasestorage.app",
+            messagingSenderId: "1056267942090",
+            appId: "1:1056267942090:web:febe00a2468dd95d9d9c33"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let isAudioEnabled = false;
+
+        // 啟動鈴聲權限
+        window.enableAudio = () => {
+            isAudioEnabled = true;
+            document.getElementById('audio-prompt').style.display = 'none';
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+        };
+
+        onValue(ref(db, 'orders'), (snapshot) => {
+            const orders = snapshot.val();
+            const list = document.getElementById('order-list');
+            
+            if (!orders) {
+                list.innerHTML = '<div class="text-center py-20 text-gray-400 text-xl font-bold">💤 目前沒有新訂單</div>';
+                return;
+            }
+
+            // 只有點過按鈕後才會響鈴
+            if (isAudioEnabled) {
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(e => console.log(e));
+            }
+
+            list.innerHTML = Object.keys(orders).sort((a,b) => orders[b].timestamp - orders[a].timestamp).map(id => {
+                const o = orders[id];
+                return `
+                    <div class="bg-white p-6 rounded-3xl shadow-xl border-2 border-blue-100 mb-6 transition-all">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-3xl font-black text-blue-600">桌號：${o.table}</h2>
+                            <span class="text-gray-400 font-bold">${o.time}</span>
+                        </div>
+                        <div class="space-y-3 mb-6">
+                            ${o.items.map(i => `<p class="text-2xl font-bold text-gray-800">${i.name} <span class="text-blue-500">x ${i.qty}</span></p>`).join('')}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-black text-red-500">總計: $${o.total}</span>
+                            <button onclick="window.finish('${id}')" class="bg-green-500 text-white px-8 py-3 rounded-2xl font-bold text-xl hover:bg-green-600">完成出餐</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        });
+
+        window.finish = (id) => {
+            if(confirm("確定這單做好了？")) remove(ref(db, `orders/${id}`));
+        };
+    </script>
+</head>
+<body class="bg-blue-50 p-6 min-h-screen">
+    <div class="max-w-2xl mx-auto text-center mb-10">
+        <h1 class="text-4xl font-black text-blue-900 mb-4 tracking-tighter">🍦 阿倫冰店 ‧ 訂單管理系統</h1>
+        
+        <div id="audio-prompt" class="mb-4">
+            <button onclick="enableAudio()" class="bg-yellow-500 text-white px-8 py-4 rounded-full font-black text-xl shadow-lg hover:bg-yellow-600 animate-bounce">
+                🔔 點擊此處「啟動鈴聲通知」
+            </button>
+            <p class="text-gray-500 text-sm mt-2 font-bold">※ 每天早上開啟網頁時點一次即可</p>
+        </div>
+    </div>
+
+    <div id="order-list" class="max-w-2xl mx-auto"></div>
+</body>
+</html>

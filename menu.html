@@ -5,28 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>阿倫冰店 - 線上點餐</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.btn-active:active { transform: scale(0.95); transition: 0.1s; }</style>
+    <style>
+        .btn-active:active { transform: scale(0.95); transition: 0.1s; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-cart { animation: slideUp 0.4s ease-out; }
+    </style>
 </head>
 <body class="bg-blue-50 pb-44 font-sans">
+
     <div class="bg-gradient-to-r from-blue-700 to-blue-500 p-6 text-white text-center shadow-md sticky top-0 z-50">
         <h1 class="text-2xl font-black tracking-widest">潮州燒冷冰 (阿倫冰店)</h1>
         <div class="mt-2 inline-flex items-center bg-white/20 px-4 py-1 rounded-full border border-white/30 shadow-inner">
-            <span class="text-sm font-bold">桌號：<span id="display-table" class="text-yellow-300 text-lg ml-1 font-black">偵測中...</span></span>
+            <span class="text-sm font-bold text-white">桌號：<span id="display-table" class="text-yellow-300 text-lg ml-1 font-black">偵測中...</span></span>
         </div>
     </div>
 
-    <div class="px-4 space-y-3 mt-4" id="menu-list"></div>
+    <div class="px-4 mt-6 max-w-md mx-auto" id="menu-container">
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-xl shadow-sm">
+            <p class="font-bold text-yellow-700 text-sm mb-1">🔥 燒冷冰吃法祕訣：</p>
+            <ul class="text-xs text-yellow-600 space-y-1">
+                <li>1. <strong>請勿攪拌</strong>（攪拌會讓冰化得快）</li>
+                <li>2. <strong>從邊邊由下往上吃</strong></li>
+                <li>3. 感受熱圓仔與冷冰的口感交替</li>
+            </ul>
+        </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[32px] p-6 z-50">
+        <div class="space-y-3" id="menu-list"></div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[32px] p-6 z-50 animate-cart">
         <div class="max-w-md mx-auto">
             <div class="flex justify-between items-end mb-4">
                 <div>
-                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">總計金額</p>
-                    <p class="text-4xl font-black text-red-600 flex items-start"><span class="text-lg mt-1 mr-1">$</span><span id="total-price">0</span></p>
+                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">目前總計</p>
+                    <p class="text-4xl font-black text-red-600 flex items-start">
+                        <span class="text-lg mt-1 mr-1">$</span><span id="total-price">0</span>
+                    </p>
                 </div>
-                <button id="submit-btn" onclick="submitOrder()" class="btn-active bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xl shadow-lg">送出訂單</button>
+                <button id="submit-btn" onclick="submitOrder()" class="btn-active bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xl shadow-lg shadow-blue-200">
+                    送出訂單
+                </button>
             </div>
-            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic text-center">尚未選擇任何冰品...</div>
+            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic text-center">
+                快選幾碗好吃的燒冷冰吧！
+            </div>
         </div>
     </div>
 
@@ -34,7 +57,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 根據 image_f473e5.png 填入的金鑰
+        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyB7BKrE4Nq0ZPDPcOvj5iJ7nwh1eFtH8PE",
             authDomain: "alun-ice-shop.firebaseapp.com",
@@ -48,32 +71,42 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // 完整餐點清單
         const menuItems = [
-            { id: 0, name: "綜合燒冷冰", price: 65 },
-            { id: 1, name: "綜合燒冷冰+煉乳", price: 70 },
-            { id: 2, name: "綜合熱湯圓", price: 65 },
-            { id: 3, name: "冷凍芋", price: 65 },
-            { id: 4, name: "冷凍綠豆饌", price: 65 }
+            { id: 0, name: "綜合燒冷冰", price: 65, category: "招牌必點" },
+            { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "大受好評" },
+            { id: 2, name: "綜合熱湯圓", price: 65, category: "冬日首選" },
+            { id: 3, name: "冷凍芋", price: 65, category: "古早味" },
+            { id: 4, name: "冷凍綠豆饌", price: 65, category: "經典冰品" },
+            { id: 5, name: "紅豆冰", price: 65, category: "經典" },
+            { id: 6, name: "花生冰", price: 65, category: "經典" },
+            { id: 7, name: "牛奶冰", price: 65, category: "甜甜推薦" }
+            { id: 8, name: "巧克力冰", price: 65, category: "甜甜推薦" }
+            { id: 9, name: "烏梅冰", price: 65, category: "退火聖品" }\
+            { id: 10, name: "草莓冰", price: 65, category: "羊來了,草莓了" }
+            { id: 11, name: "四果冰", price: 65, category: "四果一捏" }
         ];
 
         let cart = {};
-
-        // 重要：這段負責抓網址裡的 table
         const urlParams = new URLSearchParams(window.location.search);
-        const tableId = urlParams.get('table') || "未偵測";
+        const tableId = urlParams.get('table') || "測試桌";
         document.getElementById('display-table').innerText = tableId;
 
         window.renderMenu = function() {
-            const container = document.getElementById('menu-list');
-            container.innerHTML = menuItems.map(item => {
+            const list = document.getElementById('menu-list');
+            list.innerHTML = menuItems.map(item => {
                 const count = cart[item.id] || 0;
                 return `
                     <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
-                        <div><h3 class="font-bold text-gray-800 text-lg">${item.name}</h3><p class="text-blue-600 font-black">$${item.price}</p></div>
+                        <div>
+                            <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded font-bold">${item.category}</span>
+                            <h3 class="font-bold text-gray-800 text-lg mt-1">${item.name}</h3>
+                            <p class="text-blue-600 font-black">$${item.price}</p>
+                        </div>
                         <div class="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-2xl">
-                            <button onclick="updateQty(${item.id}, -1)" class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 font-bold border border-gray-100">-</button>
-                            <span class="font-bold text-xl w-6 text-center">${count}</span>
-                            <button onclick="updateQty(${item.id}, 1)" class="w-9 h-9 rounded-xl bg-blue-600 shadow-md flex items-center justify-center text-white font-bold">+</button>
+                            <button onclick="updateQty(${item.id}, -1)" class="btn-active w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 font-bold border border-gray-100">-</button>
+                            <span class="font-black text-xl w-6 text-center text-gray-700">${count}</span>
+                            <button onclick="updateQty(${item.id}, 1)" class="btn-active w-10 h-10 rounded-xl bg-blue-600 shadow-md flex items-center justify-center text-white font-bold">+</button>
                         </div>
                     </div>`;
             }).join('');
@@ -94,30 +127,32 @@
                 summary.push(`${item.name} x ${cart[id]}`);
             });
             document.getElementById('total-price').innerText = total;
-            document.getElementById('cart-preview').innerText = summary.length ? summary.join('、') : "快點幾碗好吃的燒冷冰吧！";
+            document.getElementById('cart-preview').innerText = summary.length ? summary.join('、') : "快選幾碗好吃的燒冷冰吧！";
         }
 
         window.submitOrder = async function() {
-            if (Object.keys(cart).length === 0) return alert("請先選餐！");
+            if (Object.keys(cart).length === 0) return alert("點餐清單是空的喔！");
             const btn = document.getElementById('submit-btn');
             btn.disabled = true; btn.innerText = "傳送中...";
+
             try {
-                const orderDetail = {
+                const orderData = {
                     table: tableId,
                     items: Object.keys(cart).map(id => {
                         const item = menuItems.find(m => m.id == id);
                         return { name: item.name, qty: cart[id] };
                     }),
                     total: document.getElementById('total-price').innerText,
-                    time: new Date().toLocaleTimeString(),
+                    time: new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now()
                 };
-                await set(push(ref(db, 'orders')), orderDetail);
-                alert("訂單已成功傳送！");
+                await set(push(ref(db, 'orders')), orderData);
+                alert("訂單已傳送！");
                 cart = {}; renderMenu(); updateCartUI();
-            } catch (e) { alert("傳送失敗，請聯絡櫃檯"); }
+            } catch (e) { alert("失敗，請聯絡櫃檯"); }
             finally { btn.disabled = false; btn.innerText = "送出訂單"; }
         };
+
         renderMenu();
     </script>
 </body>

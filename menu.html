@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .btn-active:active { transform: scale(0.95); transition: 0.1s; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-cart { animation: slideUp 0.4s ease-out; }
     </style>
 </head>
 <body class="bg-blue-50 pb-44 font-sans">
@@ -14,17 +16,18 @@
     <div class="bg-gradient-to-r from-blue-700 to-blue-500 p-6 text-white text-center shadow-md sticky top-0 z-50">
         <h1 class="text-2xl font-black tracking-widest">潮州燒冷冰 (阿倫冰店)</h1>
         <div class="mt-2 inline-flex items-center bg-white/20 px-4 py-1 rounded-full border border-white/30 shadow-inner">
-            <span class="text-sm font-bold">桌號：<span id="display-table" class="text-yellow-300 text-lg ml-1">偵測中...</span></span>
+            <span class="text-sm font-bold text-white">桌號：<span id="display-table" class="text-yellow-300 text-lg ml-1 font-black">偵測中...</span></span>
         </div>
     </div>
 
-    <div class="px-4 space-y-3 mt-4" id="menu-list"></div>
+    <div class="px-4 space-y-3 mt-6" id="menu-list">
+        </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[32px] p-6 z-50">
+    <div class="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[32px] p-6 z-50 animate-cart">
         <div class="max-w-md mx-auto">
             <div class="flex justify-between items-end mb-4">
                 <div>
-                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">總計金額</p>
+                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">目前總計</p>
                     <p class="text-4xl font-black text-red-600 flex items-start">
                         <span class="text-lg mt-1 mr-1">$</span><span id="total-price">0</span>
                     </p>
@@ -33,15 +36,18 @@
                     送出訂單
                 </button>
             </div>
-            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic text-center">尚未選擇任何冰品...</div>
+            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic text-center">
+                快選幾碗好吃的燒冷冰吧！
+            </div>
         </div>
     </div>
 
     <script type="module">
+        // --- 1. Firebase 核心載入 ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase 配置 (已填入你的金鑰)
+        // --- 2. 你的專屬 Firebase 配置 (已填入金鑰) ---
         const firebaseConfig = {
             apiKey: "AIzaSyB7BKrE4Nq0ZPDPcOvj5iJ7nwh1eFtH8PE",
             authDomain: "alun-ice-shop.firebaseapp.com",
@@ -55,85 +61,33 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- 3. 菜單資料設定 ---
         const menuItems = [
-            { id: 0, name: "綜合燒冷冰", price: 65, category: "招牌" },
-            { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "推薦" },
-            { id: 2, name: "綜合熱湯圓", price: 65, category: "熱食" },
-            { id: 3, name: "冷凍芋", price: 65, category: "冰品" },
-            { id: 4, name: "冷凍綠豆饌", price: 65, category: "冰品" }
+            { id: 0, name: "綜合燒冷冰", price: 65, category: "招牌必點" },
+            { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "大受好評" },
+            { id: 2, name: "綜合熱湯圓", price: 65, category: "冬季首選" },
+            { id: 3, name: "冷凍芋", price: 65, category: "古早味" },
+            { id: 4, name: "冷凍綠豆饌", price: 65, category: "經典冰品" },
+            { id: 5, name: "牛奶冰", price: 65, category: "甜甜滋味" }
         ];
 
         let cart = {};
+
+        // --- 4. 解析桌號 ---
         const urlParams = new URLSearchParams(window.location.search);
-        const tableId = urlParams.get('table') || "未偵測";
+        const tableId = urlParams.get('table') || "測試桌";
         document.getElementById('display-table').innerText = tableId;
 
+        // --- 5. 渲染菜單功能 ---
         window.renderMenu = function() {
             const container = document.getElementById('menu-list');
             container.innerHTML = menuItems.map(item => {
                 const count = cart[item.id] || 0;
                 return `
                     <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
-                        <div><h3 class="font-bold text-gray-800 text-lg">${item.name}</h3><p class="text-blue-600 font-black">$${item.price}</p></div>
-                        <div class="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-2xl">
-                            <button onclick="updateQty(${item.id}, -1)" class="btn-active w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 text-xl font-bold border border-gray-100">-</button>
-                            <span class="font-bold text-xl w-6 text-center">${count}</span>
-                            <button onclick="updateQty(${item.id}, 1)" class="btn-active w-9 h-9 rounded-xl bg-blue-600 shadow-md flex items-center justify-center text-white text-xl font-bold">+</button>
+                        <div>
+                            <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded font-bold">${item.category}</span>
+                            <h3 class="font-bold text-gray-800 text-lg mt-1">${item.name}</h3>
+                            <p class="text-blue-600 font-black">$${item.price}</p>
                         </div>
-                    </div>`;
-            }).join('');
-        }
-
-        window.updateQty = function(id, change) {
-            cart[id] = (cart[id] || 0) + change;
-            if (cart[id] <= 0) delete cart[id];
-            renderMenu();
-            updateCartUI();
-        }
-
-        function updateCartUI() {
-            let total = 0;
-            let summary = [];
-            Object.keys(cart).forEach(id => {
-                const item = menuItems.find(m => m.id == id);
-                total += item.price * cart[id];
-                summary.push(`${item.name} x ${cart[id]}`);
-            });
-            document.getElementById('total-price').innerText = total;
-            document.getElementById('cart-preview').innerText = summary.length ? summary.join('、') : "尚未選擇任何冰品...";
-        }
-
-        window.submitOrder = async function() {
-            if (Object.keys(cart).length === 0) return alert("請先選餐！");
-            if (tableId === "未偵測") return alert("請重新掃描 QR Code，系統偵測不到桌號！");
-            
-            const btn = document.getElementById('submit-btn');
-            btn.disabled = true;
-            btn.innerText = "傳送中...";
-
-            const orderDetail = {
-                table: tableId,
-                items: Object.keys(cart).map(id => {
-                    const item = menuItems.find(m => m.id == id);
-                    return { name: item.name, qty: cart[id] };
-                }),
-                total: document.getElementById('total-price').innerText,
-                time: new Date().toLocaleTimeString(),
-            };
-
-            try {
-                await set(push(ref(db, 'orders')), orderDetail);
-                alert("訂單已傳送！老闆正在為您準備中。");
-                cart = {}; renderMenu(); updateCartUI();
-            } catch (e) {
-                alert("傳送失敗，請直接告知櫃檯。");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "送出訂單";
-            }
-        }
-
-        renderMenu();
-    </script>
-</body>
-</html>
+                        <div class="flex items-

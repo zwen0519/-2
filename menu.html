@@ -71,7 +71,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 完整餐點清單
+        // --- 3. 完整餐點清單 (已新增巧克力、烏梅、草莓、四果) ---
         const menuItems = [
             { id: 0, name: "綜合燒冷冰", price: 65, category: "招牌必點" },
             { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "大受好評" },
@@ -80,13 +80,12 @@
             { id: 4, name: "冷凍綠豆饌", price: 65, category: "經典冰品" },
             { id: 5, name: "紅豆冰", price: 65, category: "經典" },
             { id: 6, name: "花生冰", price: 65, category: "經典" },
-            { id: 7, name: "牛奶冰", price: 65, category: "甜甜推薦" }
-            { id: 8, name: "巧克力冰", price: 65, category: "甜甜推薦" }
-            { id: 9, name: "烏梅冰", price: 65, category: "退火聖品" }\
-            { id: 10, name: "草莓冰", price: 65, category: "羊來了,草莓了" }
+            { id: 7, name: "牛奶冰", price: 65, category: "甜甜推薦" },
+            { id: 8, name: "巧克力冰", price: 65, category: "甜甜推薦" },
+            { id: 9, name: "烏梅冰", price: 65, category: "退火聖品" },
+            { id: 10, name: "草莓冰", price: 65, category: "羊來了,草莓了" },
             { id: 11, name: "四果冰", price: 65, category: "四果一捏" }
         ];
-
         let cart = {};
         const urlParams = new URLSearchParams(window.location.search);
         const tableId = urlParams.get('table') || "測試桌";

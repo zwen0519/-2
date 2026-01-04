@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .btn-active:active { transform: scale(0.95); transition: 0.1s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
     </style>
 </head>
 <body class="bg-blue-50 pb-44 font-sans">
@@ -20,84 +18,73 @@
         </div>
     </div>
 
-    <div class="m-4 bg-white border-l-4 border-yellow-400 p-3 rounded-r-xl shadow-sm">
-        <p class="text-yellow-700 font-extrabold text-sm mb-1">🔥 燒冷冰好吃秘訣：</p>
-        <div class="text-xs text-gray-500 flex justify-between">
-            <span>❌ 不要攪拌</span>
-            <span>✅ 由下往上吃</span>
-            <span>🍡 先吃熱湯圓</span>
-        </div>
-    </div>
-
-    <div class="px-4 space-y-3" id="menu-list"></div>
+    <div class="px-4 space-y-3 mt-4" id="menu-list"></div>
 
     <div class="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[32px] p-6 z-50">
         <div class="max-w-md mx-auto">
             <div class="flex justify-between items-end mb-4">
                 <div>
-                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">Total Price</p>
+                    <p class="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">總計金額</p>
                     <p class="text-4xl font-black text-red-600 flex items-start">
                         <span class="text-lg mt-1 mr-1">$</span><span id="total-price">0</span>
                     </p>
                 </div>
-                <button onclick="submitOrder()" class="btn-active bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xl shadow-lg shadow-blue-200">
+                <button id="submit-btn" onclick="submitOrder()" class="btn-active bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xl shadow-lg shadow-blue-200">
                     送出訂單
                 </button>
             </div>
-            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic">尚未選擇任何冰品...</div>
+            <div id="cart-preview" class="text-xs text-gray-400 border-t pt-3 italic text-center">尚未選擇任何冰品...</div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase 配置 (已填入你的金鑰)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7BKrE4Nq0ZPDPcOvj5iJ7nwh1eFtH8PE",
+            authDomain: "alun-ice-shop.firebaseapp.com",
+            databaseURL: "https://alun-ice-shop-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "alun-ice-shop",
+            storageBucket: "alun-ice-shop.firebasestorage.app",
+            messagingSenderId: "1056267942090",
+            appId: "1:1056267942090:web:febe00a2468dd95d9d9c33"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
         const menuItems = [
             { id: 0, name: "綜合燒冷冰", price: 65, category: "招牌" },
-            { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "大推" },
+            { id: 1, name: "綜合燒冷冰+煉乳", price: 70, category: "推薦" },
             { id: 2, name: "綜合熱湯圓", price: 65, category: "熱食" },
-            { id: 3, name: "冷凍芋", price: 65, category: "必點" },
-            { id: 4, name: "冷凍綠豆饌", price: 65, category: "冰品" },
-            { id: 5, name: "四果冰", price: 65, category: "經典" }
+            { id: 3, name: "冷凍芋", price: 65, category: "冰品" },
+            { id: 4, name: "冷凍綠豆饌", price: 65, category: "冰品" }
         ];
 
         let cart = {};
-
-        // --- 強化的桌號解析 ---
-        function getTableId() {
-            const params = new URLSearchParams(window.location.search);
-            let table = params.get('table');
-            if (!table) {
-                // 如果抓不到，嘗試從 # 後面抓 (有些掃描器會誤判)
-                const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
-                table = hashParams.get('table');
-            }
-            return table || "未偵測";
-        }
-
-        const tableId = getTableId();
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableId = urlParams.get('table') || "未偵測";
         document.getElementById('display-table').innerText = tableId;
-        if(tableId === "未偵測") alert("偵測不到桌號，請掃描正確的 QR Code 或聯絡櫃檯。");
 
-        function renderMenu() {
+        window.renderMenu = function() {
             const container = document.getElementById('menu-list');
             container.innerHTML = menuItems.map(item => {
                 const count = cart[item.id] || 0;
                 return `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center animate-fadeIn border border-white">
-                        <div>
-                            <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded font-bold">${item.category}</span>
-                            <h3 class="font-bold text-gray-800 text-lg">${item.name}</h3>
-                            <p class="text-blue-600 font-black">$${item.price}</p>
-                        </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
+                        <div><h3 class="font-bold text-gray-800 text-lg">${item.name}</h3><p class="text-blue-600 font-black">$${item.price}</p></div>
                         <div class="flex items-center space-x-3 bg-gray-50 p-1.5 rounded-2xl">
-                            <button onclick="updateQty(${item.id}, -1)" class="btn-active w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 text-xl font-bold">-</button>
-                            <span class="font-bold text-xl w-6 text-center text-gray-700">${count}</span>
+                            <button onclick="updateQty(${item.id}, -1)" class="btn-active w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 text-xl font-bold border border-gray-100">-</button>
+                            <span class="font-bold text-xl w-6 text-center">${count}</span>
                             <button onclick="updateQty(${item.id}, 1)" class="btn-active w-9 h-9 rounded-xl bg-blue-600 shadow-md flex items-center justify-center text-white text-xl font-bold">+</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
         }
 
-        function updateQty(id, change) {
+        window.updateQty = function(id, change) {
             cart[id] = (cart[id] || 0) + change;
             if (cart[id] <= 0) delete cart[id];
             renderMenu();
@@ -116,20 +103,33 @@
             document.getElementById('cart-preview').innerText = summary.length ? summary.join('、') : "尚未選擇任何冰品...";
         }
 
-        function submitOrder() {
+        window.submitOrder = async function() {
             if (Object.keys(cart).length === 0) return alert("請先選餐！");
-            if (tableId === "未偵測") return alert("無桌號資訊，無法送出訂單。");
+            if (tableId === "未偵測") return alert("請重新掃描 QR Code，系統偵測不到桌號！");
+            
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerText = "傳送中...";
 
-            const orderDetail = Object.keys(cart).map(id => {
-                const item = menuItems.find(m => m.id == id);
-                return `${item.name} x ${cart[id]}`;
-            }).join('\n');
+            const orderDetail = {
+                table: tableId,
+                items: Object.keys(cart).map(id => {
+                    const item = menuItems.find(m => m.id == id);
+                    return { name: item.name, qty: cart[id] };
+                }),
+                total: document.getElementById('total-price').innerText,
+                time: new Date().toLocaleTimeString(),
+            };
 
-            if(confirm(`確認訂單內容：\n桌號：${tableId}\n\n${orderDetail}\n\n總計：$${document.getElementById('total-price').innerText}\n確定送出？`)) {
-                alert("訂單已送出！老闆正在為您準備中...");
-                cart = {};
-                renderMenu();
-                updateCartUI();
+            try {
+                await set(push(ref(db, 'orders')), orderDetail);
+                alert("訂單已傳送！老闆正在為您準備中。");
+                cart = {}; renderMenu(); updateCartUI();
+            } catch (e) {
+                alert("傳送失敗，請直接告知櫃檯。");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "送出訂單";
             }
         }
 

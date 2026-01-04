@@ -25,7 +25,6 @@
                 <input type="text" id="table-input" value="A1" 
                     class="w-full p-4 border-2 border-blue-100 rounded-2xl focus:border-blue-500 outline-none text-center text-3xl font-black text-blue-600">
             </div>
-            
             <button onclick="generateQR()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all">
                 生成點餐 QR Code
             </button>
@@ -40,20 +39,15 @@
             const urlText = document.getElementById('url-text');
             const urlContainer = document.getElementById('url-container');
 
-            // 1. 抓取目前目錄路徑，確保指向 menu.html
             let currentPath = window.location.origin + window.location.pathname;
             currentPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
             
-            // 2. 構建標準網址格式
             const fullUrl = `${currentPath}menu.html?table=${encodeURIComponent(tableValue)}`;
-            
-            // 3. 使用 QR API
             const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(fullUrl)}`;
             
             qrDisplay.src = qrImageUrl;
             urlText.innerText = fullUrl;
-
-            qrDisplay.onload = function() {
+            qrDisplay.onload = () => {
                 qrDisplay.style.display = 'block';
                 loadingText.style.display = 'none';
                 urlContainer.classList.remove('hidden');

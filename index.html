@@ -1,18 +1,74 @@
-<script>
-    function generateQR() {
-        const tableValue = document.getElementById('table-input').value.trim() || "A1";
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿倫冰店 - QR產生器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .btn-active:active { transform: scale(0.95); transition: 0.1s; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-6 text-center">
+        <h1 class="text-2xl font-black mb-6 text-blue-600 italic tracking-tighter">阿倫冰店 QR 產生器</h1>
         
-        // 取得當前網址路徑，並確保指向同資料夾下的 menu.html
-        let currentPath = window.location.href.split('?')[0]; 
-        currentPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-        
-        const fullUrl = `${currentPath}menu.html?table=${encodeURIComponent(tableValue)}`;
-        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(fullUrl)}`;
-        
-        document.getElementById('qr-display').src = qrImageUrl;
-        document.getElementById('url-text').innerText = fullUrl;
-        document.getElementById('qr-display').style.display = 'block';
-        document.getElementById('loading-text').style.display = 'none';
-        document.getElementById('url-container').classList.remove('hidden');
-    }
-</script>
+        <div class="bg-blue-50 p-6 rounded-2xl mb-6 flex flex-col items-center border-2 border-dashed border-blue-200">
+            <img id="qr-display" src="" class="mx-auto w-52 h-52 border-4 border-white shadow-lg mb-4" style="display: none;">
+            <div id="loading-text" class="text-gray-400 font-bold py-10">請輸入桌號並生成</div>
+            <div id="url-container" class="p-2 bg-white rounded-lg border hidden w-full overflow-hidden">
+                <p class="text-[10px] text-gray-400 mb-1">產生的點餐網址：</p>
+                <p id="url-text" class="text-[10px] text-blue-500 break-all font-mono leading-tight"></p>
+            </div>
+        </div>
+
+        <div class="text-left space-y-4">
+            <div>
+                <label class="block text-gray-500 text-sm font-bold mb-2 ml-1">設定桌號 (例如: A1, 05):</label>
+                <input type="text" id="table-input" placeholder="輸入桌號" 
+                    class="w-full p-4 border-2 border-blue-100 rounded-2xl focus:border-blue-500 outline-none text-center text-3xl font-black text-blue-600">
+            </div>
+            <button onclick="generateQR()" class="btn-active w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xl shadow-xl transition-all">
+                生成點餐 QR Code
+            </button>
+        </div>
+
+        <p class="text-gray-400 text-xs mt-6 italic">產生的圖片可直接手機截圖列印</p>
+    </div>
+
+    <script>
+        function generateQR() {
+            const tableValue = document.getElementById('table-input').value.trim();
+            if(!tableValue) {
+                alert("老闆，請先輸入桌號喔！");
+                return;
+            }
+
+            // 1. 自動偵測目前的網址路徑
+            let currentPath = window.location.href.split('?')[0]; 
+            // 確保路徑指向 menu.html
+            const lastSlashIndex = currentPath.lastIndexOf('/');
+            const basePath = currentPath.substring(0, lastSlashIndex + 1);
+            
+            // 2. 組合出顧客點餐的完整網址
+            const fullUrl = basePath + "menu.html?table=" + encodeURIComponent(tableValue);
+            
+            // 3. 呼叫 QR Code API
+            const qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" + encodeURIComponent(fullUrl);
+            
+            const qrDisplay = document.getElementById('qr-display');
+            const loadingText = document.getElementById('loading-text');
+            const urlText = document.getElementById('url-text');
+            const urlContainer = document.getElementById('url-container');
+
+            qrDisplay.src = qrImageUrl;
+            qrDisplay.onload = () => {
+                qrDisplay.style.display = 'block';
+                loadingText.style.display = 'none';
+                urlText.innerText = fullUrl;
+                urlContainer.classList.remove('hidden');
+            };
+        }
+    </script>
+</body>
+</html>
